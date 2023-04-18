@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\DataCSV;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpClient\HttpClient;
 
 class HomepageController extends Controller
 {
@@ -18,24 +20,24 @@ class HomepageController extends Controller
         $validation = Validator::make(
             $request->all(),
             [
-                'file-upload' => 'required|mimes:csv,txt|max:2048',
-                'name' => 'required|string',
-                'notelp' => 'required|regex:/(01)[0-9]{9}',
+                // 'file-upload' => 'required|mimes:csv,txt|max:2048',
+                'review' => 'required|string',
+                // 'notelp' => 'required',
 
             ],
             [
-                'file-upload.required' => 'Inputan File Harus Diisi',
-                'name.required' => 'Inputan File Harus Diisi',
-                'notelp.required' => 'Inputan File Harus Diisi',
+                // 'file-upload.required' => 'Inputan File Harus Diisi',
+                'review.required' => 'Inputan Review Harus Diisi',
+                // 'notelp.required' => 'Inputan File Harus Diisi',
             ]
         );
         if ($validation->fails()) {
             return redirect()->back()->withErrors($validation->errors())->withInput();
         }
         $datacsv = new DataCSV();
-        $datacsv->data_csv = $request->file('file-upload')->store('csv', 'public');
-        $datacsv->nama = $request-> name ;
-        $datacsv->no_telp = $request-> notelp ;
+        // $datacsv->data_csv = $request->file('file-upload')->store('csv', 'public');
+        $datacsv->review = $request-> review ;
+        // $datacsv->no_telp = $request-> notelp ;
 
         if($datacsv->save()){
 
@@ -43,12 +45,43 @@ class HomepageController extends Controller
         }
     }
 
-    public function getData(){
-            $gd= DataCSV::get()->all();
-            return view('beranda',compact('gd'));
+    public function getData(Request $request ){
+            // $gd= DataCSV::get()->all();
+            // return view('beranda',compact('gd'));
+            // how to make end point to API with port flask
+
+            // nadia code
+            $apiUrl ='http://127.0.0.1:5000/coba';
+            $postData = [
+                'review' => $request->review,
+                // 'preproc' => $request->radioPreproc,
+                // 'model' => $request->radioModel,
+            ];
+            $formData = http_build_query($postData);
+            $headers = [
+                'Content-Type' => 'application/x-www-form-urlencoded',
+            ];
+
+            // Send the POST request to the API and get the response
+            $client = HttpClient::create();
+            $response = $client->request('POST', $apiUrl, [
+                'headers' => $headers,
+                'body' => $formData,
+            ]);
+            // Get the response content
+            $content = json_decode($response->getContent());
+            $title = "Demo";
+            return view('beranda')->with(compact('content', 'title'));
+            // return view('pages.demo', compact('contentJSON', 'title'));
+            // return view('beranda',compact('gd'));
+
     }
 
     public function dokumentasi(){
         return view('dokumentasi');
     }
+
+    // public function getDataAPI(){
+
+    // }
 }
